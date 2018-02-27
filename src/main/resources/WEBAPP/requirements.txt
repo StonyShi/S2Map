@@ -1,0 +1,6 @@
+requests
+lxml
+html2text
+Flask
+gunicorn
+s2sphere

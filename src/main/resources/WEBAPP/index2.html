@@ -1,0 +1,224 @@
+<html>
+  <head>
+
+      <link href="https://cdn.bootcss.com/leaflet/1.2.0/leaflet.css" rel="stylesheet" type="text/css" />
+      <script src="https://cdn.bootcss.com/leaflet/1.2.0/leaflet.js" type="text/javascript" ></script>
+
+    <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js"></script>
+    <script type="text/javascript" src="thirdparty/jquery.js"></script>
+    <script type="text/javascript" src="thirdparty/underscore.js"></script>
+    <script type="text/javascript" src="thirdparty/backbone-min.js"></script>
+    <script type="text/javascript" src="wicket.js"></script>
+    <script type="text/javascript" src="wicket-leaflet.js"></script>
+    <script type="text/javascript" src="llmap2.js"></script>
+    <script type="text/javascript" src="thirdparty/leaflet-geodesy.js"></script>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-37132882-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+    <style>
+
+    body, html {
+      margin: 0;
+      padding: 0;
+    }
+
+.info {
+  display: none;
+}
+
+#map {
+    position: absolute;
+    top: 0; /* if you have a 200px block at the top */
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.plotButtonBox {
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+  padding-bottom: 30px;
+}
+
+.controlsBox {
+    overflow-y: scroll;
+    height: 100%;
+    padding: 10px;
+
+    background: #E9EAEE;
+    border: 2px solid white;
+    margin: 0 auto;
+    box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.5);
+    -moz-box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.5);
+    -webkit-box-shadow: 1px 2px 6px;
+
+    z-index: 500;
+    background: white;
+    position: fixed;
+    width: 170px;
+    /* height: 440 px; */
+
+}
+
+
+.clear { /* generic container (i.e. div) for floating buttons */
+    overflow: hidden;
+    width: 100%;
+}
+
+a.button {
+    background: transparent url('img/bg_button_a.gif') no-repeat scroll top right;
+    color: #444;
+    display: block;
+    float: left;
+    font: normal 12px arial, sans-serif;
+    height: 24px;
+    margin-right: 6px;
+    padding-right: 18px;
+    text-decoration: none;
+}
+
+a.button span {
+    background: transparent url('img/bg_button_span.gif') no-repeat;
+    display: block;
+    line-height: 14px;
+    padding: 5px 0 5px 18px;
+}
+
+a.button:active {
+    background-position: bottom right;
+    color: #000;
+    outline: none;
+}
+
+a.button:active span {
+    background-position: bottom left;
+    padding: 6px 0 4px 18px;
+}
+
+.boundsButton {
+  padding-left: 48px;
+}
+
+.basemapSelectorBox {
+  position: fixed;
+  left: 210px;
+  z-index: 10000;
+  top: 8px;
+}
+
+.boundsInput {
+  width: 100%;
+  margin-top: 3px;
+  margin-bottom: 3px;
+  height: 50vh;
+}
+
+    </style>
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+
+    <div class="basemapSelectorBox">
+      <select class="basemapSelector"></select>
+    </div>
+
+
+    <div class="controlsBox">
+      <div class="controls">
+        <label>
+          <input type="radio" name="pointmode" value="latlng" class="latlngMode" checked="checked"/>
+          Lat/Lng
+        </label>
+
+        <br/>
+
+        <label>
+          <input type="radio" name="pointmode" value="lnglat" class="lnglatMode"/>
+          Lng/Lat
+        </label>
+
+        <hr/>
+
+        <label>
+          <input type="radio" name="mode" value="polygon" class="polygonMode" data-mode="polygon" checked="checked"/>
+          Polygon mode
+        </label>
+
+        <br/>
+
+        <label>
+          <input type="radio" name="mode" value="line" class="lineMode" data-mode="line"/>
+          Line mode
+        </label>
+
+	<br/>
+
+        <label>
+          <input type="radio" name="mode" value="point" class="pointMode" data-mode="point"/>
+          Point mode
+        </label>
+	<br/>
+
+        <label>
+          <input type="radio" name="mode" value="circle" class="circleMode" data-mode="circle"/>
+          Circle mode
+        </label>
+
+        <hr/>
+
+        <label>
+          <input type="checkbox" name="clearMap" value="clearMap" class="clearMap" checked/>
+          Clear map on plot
+        </label>
+
+        <br/>
+
+        <label>
+          <input type="checkbox" name="s2cover" value="clearMap" class="s2cover"/>
+          Show s2 covering
+        </label>
+
+        <div class="s2options" style="display: none">
+          <input size="2" class="min_level" value="1"> min_level <br/>
+          <input size="2" class="max_level" value="30"> max_level <br/>
+          <input size="2" class="max_cells" value="200"> max_cells <br/>
+          <input size="2" class="level_mod" value="1"> level_mod <br/>
+        </div>
+
+        <div class="circleOptions" style="display: none">
+          <input size="5" class="radiusInput"> radius (meters)<br/>
+        </div>
+      <br/>
+
+      <textarea class="boundsInput"></textarea><br/>
+
+      <div class="plotButtonBox">
+        <a class="button boundsButton"><span>Plot</span></a>
+      </div>
+
+      <div class="info"/>
+     </div>
+    </div>
+
+    <script>
+      $(function() {
+        var Page = new PageController();
+      	Page.initMapPage();
+      });
+    </script>
+  </body>
+</html>

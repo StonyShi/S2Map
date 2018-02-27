@@ -1,0 +1,46 @@
+<html>
+  <head>
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.css" />
+<!--[if lte IE 8]>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.ie.css" />
+<![endif]-->
+
+<script src="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.js"></script>    <script type="text/javascript" src="thirdparty/jquery.js"></script>
+<script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.2.1"></script>
+    <script type="text/javascript" src="thirdparty/underscore.js"></script>
+    <script type="text/javascript" src="thirdparty/backbone-min.js"></script>
+    <script type="text/javascript" src="llmap.js"></script>
+
+    <style>
+
+#map {
+    position: absolute;
+    top: 0; /* if you have a 200px block at the top */
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.basemapSelectorBox {
+  position: fixed;
+  left: 0px;
+  z-index: 10000;
+}
+
+    </style>
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+
+    <div class="basemapSelectorBox">
+      <select class="basemapSelector"></select>
+    </div>
+    
+    <script>
+      $(function() {
+        var Page = new PageController();
+        Page.renderHeatmap(window.location.hash.substring(1));
+      });
+    </script>
+  </body>
+</html>

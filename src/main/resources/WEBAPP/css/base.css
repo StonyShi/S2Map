@@ -1,0 +1,96 @@
+body, html {
+    margin: 0;
+    padding: 0;
+}
+
+.info {
+    display: none;
+}
+
+#map {
+    position: absolute;
+    top: 0; /* if you have a 200px block at the top */
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.plotButtonBox {
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    padding-bottom: 30px;
+}
+
+.controlsBox {
+    overflow-y: scroll;
+    height: 100%;
+    padding: 10px;
+
+    background: #E9EAEE;
+    border: 2px solid white;
+    margin: 0 auto;
+    box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.5);
+    -moz-box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.5);
+    -webkit-box-shadow: 1px 2px 6px;
+
+    z-index: 50;
+    background: white;
+    position: fixed;
+    width: 170px;
+    /* height: 440 px; */
+
+}
+
+.clear { /* generic container (i.e. div) for floating buttons */
+    overflow: hidden;
+    width: 100%;
+}
+
+a.button {
+    background: transparent url('../img/bg_button_a.gif') no-repeat scroll top right;
+    color: #444;
+    display: block;
+    float: left;
+    font: normal 12px arial, sans-serif;
+    height: 24px;
+    margin-right: 6px;
+    padding-right: 18px;
+    text-decoration: none;
+}
+
+a.button span {
+    background: transparent url('../img/bg_button_span.gif') no-repeat;
+    display: block;
+    line-height: 14px;
+    padding: 5px 0 5px 18px;
+}
+
+a.button:active {
+    background-position: bottom right;
+    color: #000;
+    outline: none;
+}
+
+a.button:active span {
+    background-position: bottom left;
+    padding: 6px 0 4px 18px;
+}
+
+.boundsButton {
+    padding-left: 48px;
+}
+
+.basemapSelectorBox {
+    position: fixed;
+    left: 210px;
+    z-index: 10000;
+    top: 8px;
+}
+
+.boundsInput {
+    width: 100%;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    height: 50vh;
+}
