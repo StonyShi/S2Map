@@ -30,9 +30,9 @@ public class NettyServer {
         }).startAndAwait(JerseyBasedHandler.builder()
             .withClassPath("com.stony.map.controllers")
             .addValueProvider(JacksonProvider.class)
-            .addRouter(routes -> {
+            .withRouter(routes -> {
                 routes.get("/get", (req, resp) -> resp.header("Content-Type", "text/plan; charset=UTF-8").sendString(Mono.just("测试")))
-                        .directory("/s", resource);
+                .directory("/s", resource);
             }).build()
         );
     }

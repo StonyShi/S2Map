@@ -1,5 +1,7 @@
 package com.stony.map;
 
+import com.stony.reactor.jersey.MimeTypeUtil;
+
 /**
  * <p>S2-Map
  * <p>com.stony.map
@@ -14,4 +16,5 @@ public class BaseTest {
     double earthMetersToRadians(double meters) {
         return (2 * Math.PI) * (meters / earthCircumferenceMeters);
     }
+
 }
