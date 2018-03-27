@@ -6,6 +6,7 @@ import com.google.common.geometry.*;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -250,15 +251,68 @@ public class RegionCovererTest extends BaseTest{
         return covering;
     }
     @Test
-    public void test_252(){
-        double lat = 39.9833094999, lng = 116.4758164788;
+    public void test_baidu_world(){
+        double lat = 39.9034051944, lng = 116.4210182366;
 
+
+        printCells(39.9034051944,116.4210182366); //world
+        printCells(39.9108766058,116.4337317581); //baidu
+
+
+        printNeighbors(39.9108766058,116.4337317581, 11, 16); //baidu
+
+    }
+    void printCells(double lat, double lng) {
         S2LatLng s2LatLng = S2LatLng.fromDegrees(lat, lng);
         S2CellId cellId = S2CellId.fromLatLng(s2LatLng);
         System.out.println(cellId.parent(18).id());
         List<S2CellId> SearchCells = SearchCells(lat, lng, 800, 14, 18, 10);
-
+        System.out.println("search cells");
         String result = SearchCells.stream().map(S2CellId::id).map(String::valueOf).collect(Collectors.joining(","));
-        System.out.println(result);
+        System.out.println(result + "," + cellId.parent(18).id());
+        System.out.println("");
+    }
+    void printNeighbors(double lat, double lng, int level, int showLevel) {
+        S2LatLng s2LatLng = S2LatLng.fromDegrees(lat, lng);
+
+        S2CellId cellId = S2CellId.fromLatLng(s2LatLng);
+        S2CellId pid = cellId.parent(level);
+
+        System.out.println("pid = " + pid.id());
+        System.out.println("pid = " + cellId.parent(level).id());
+
+        S2CellId faceNbrs[] = new S2CellId[4];
+        pid.getEdgeNeighbors(faceNbrs);
+
+        ArrayList<S2CellId> vertex = new ArrayList<S2CellId>();
+        ArrayList<S2CellId> all = new ArrayList<S2CellId>();
+        List<S2CellId> edge = Arrays.<S2CellId>asList(faceNbrs);
+
+        System.out.println("face neighbors");
+        String result = edge.stream().map(S2CellId::id).map(String::valueOf).collect(Collectors.joining(","));
+        System.out.println(result + "," + cellId.parent(showLevel).id());
+        System.out.println("");
+
+        S2Cell pcell = new S2Cell(pid);
+        for (int k = 0; k < 4; ++k) {
+            vertex.add(S2CellId.fromPoint(pcell.getVertex(k)));
+        }
+        System.out.println("vertex potins");
+        result = vertex.stream().map(cellId1 -> cellId1.parent(showLevel).id()).map(String::valueOf).collect(Collectors.joining(","));
+        System.out.println(result + "," + cellId.parent(showLevel).id());
+        System.out.println("");
+
+        vertex.clear();
+        System.out.println("vertex neighbors");
+        pid.getVertexNeighbors(level, vertex);
+        result = vertex.stream().map(S2CellId::id).map(String::valueOf).collect(Collectors.joining(","));
+        System.out.println(result + "," + cellId.parent(showLevel).id());
+        System.out.println("");
+
+        System.out.println("all neighbors");
+        pid.getAllNeighbors(level, all);
+        result = all.stream().map(S2CellId::id).map(String::valueOf).collect(Collectors.joining(","));
+        System.out.println(result + "," + cellId.parent(showLevel).id());
+        System.out.println("");
     }
 }

@@ -10,6 +10,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +26,73 @@ import java.util.Map;
 public class ServiceController {
     private static final Logger logger = LoggerFactory.getLogger(ServiceController.class);
     final String APPLICATION_JSON_UTF8 =  "application/json; charset=UTF-8";
+
+    @GET
+    @Path("/s2neighbors")
+    @Produces(APPLICATION_JSON_UTF8)
+    public List<MapResult> neighbors(@QueryParam("points") String points,
+                                     @QueryParam("models") String models,
+                                     @QueryParam("level") int level,
+                                     @QueryParam("showLevel") int showLevel) {
+
+        logger.info("points={}, level={}, showLevel={}, models={}", points, level, showLevel, models);
+
+        String[] points_vector = points.split(",");
+        String[] models_vector = models.split(",");
+
+        List<S2LatLng> s2points_vector = new ArrayList<>(64);
+        List<Neighbor> neighbor_vector = new ArrayList<>(8);
+        ArrayList<S2CellId> cellids_vector = new ArrayList<>(64);
+        if(showLevel > S2CellId.MAX_LEVEL) {
+            showLevel = S2CellId.MAX_LEVEL;
+        }
+        if(showLevel < 0) {
+            showLevel = 0;
+        }
+        for (int i = 0; i < models_vector.length; i++) {
+            Neighbor neighbor = Neighbor.of(models_vector[i]);
+            if(neighbor != null) {
+                neighbor_vector.add(neighbor);
+            }
+        }
+        for (int i = 0; i < points_vector.length; i += 2) {
+            double lat = Double.valueOf(points_vector[i]);
+            double lng = Double.valueOf(points_vector[i+1]);
+            s2points_vector.add(S2LatLng.fromDegrees(lat, lng));
+        }
+        for (S2LatLng s2LatLng : s2points_vector) {
+            for (Neighbor neighbor : neighbor_vector) {
+                cellids_vector.addAll(getNeighborCell(s2LatLng, level, neighbor,showLevel));
+            }
+            if(showLevel < S2CellId.MAX_LEVEL) {
+                cellids_vector.add(S2CellId.fromLatLng(s2LatLng).parent(showLevel));
+            }
+        }
+        return getMapResult(cellids_vector);
+    }
+
+    List<S2CellId> getNeighborCell(S2LatLng s2LatLng, int level, Neighbor neighbor,int showLevel) {
+        ArrayList<S2CellId> neighbors = new ArrayList<S2CellId>(16);
+        S2CellId cellId = S2CellId.fromLatLng(s2LatLng);
+        S2CellId pid = cellId.parent(level);
+        if (neighbor == Neighbor.ALL) {
+            pid.getAllNeighbors(level, neighbors);
+        } else if (neighbor == Neighbor.EDGE) {
+            S2CellId edgeNeighbors[] = new S2CellId[4];
+            pid.getEdgeNeighbors(edgeNeighbors);
+            for (S2CellId edgeNeighbor : edgeNeighbors) {
+                neighbors.add(edgeNeighbor);
+            }
+        } else if (neighbor == Neighbor.VERTEX) {
+            pid.getVertexNeighbors(level, neighbors);
+        } else if (neighbor == Neighbor.POINTS) {
+            S2Cell pcell = new S2Cell(pid);
+            for (int k = 0; k < 4; ++k) {
+                neighbors.add(S2CellId.fromPoint(pcell.getVertex(k)).parent(showLevel));
+            }
+        }
+        return neighbors;
+    }
 
     /**
      * points :39.9833094999,116.4758164788
@@ -116,6 +184,7 @@ public class ServiceController {
         List<MapResult> results = new ArrayList<>(32);
         for (int i = 0; i < cellids_vector.size(); i++) {
             S2Cell cell = new S2Cell(cellids_vector.get(i));
+
             S2CellId cellId = cell.id();
             S2LatLng center = new S2LatLng(cell.getCenter());
             logger.debug("{ id: {}, id_signed: {}, token: %s, pos: {}, face: {}, level: {}",
@@ -143,4 +212,24 @@ public class ServiceController {
         return results;
     }
 
+    enum Neighbor {
+        EDGE("edge"), VERTEX("vertex"), ALL("all"), POINTS("points");
+        String name;
+        Neighbor(String name) {
+            this.name = name;
+        }
+        static Neighbor of(String name) {
+            for(Neighbor neighbor : Neighbor.values()) {
+                if(neighbor.name.equals(name)){
+                    return neighbor;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return this.name;
+        }
+    }
 }

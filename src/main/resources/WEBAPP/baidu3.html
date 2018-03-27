@@ -78,33 +78,25 @@
                     Lng/Lat
                 </label>
                 <hr/>
-
-                <label>
-                    <input type="radio"
-                           name="mode"
-                           value="polygon"
-                           class="polygonMode"
-                           data-mode="polygon"
-                           checked="checked"
-                           v-model="mode"
-                    />
-                    Polygon mode
-                </label>
-
                 <br/>
                 <label>
-                    <input type="radio" name="mode" value="line" class="lineMode" data-mode="line" v-model="mode"/>
-                    Line mode
+                    <input type="checkbox" name="mode" value="all" class="lineMode" v-model="mode" checked/>
+                    All Neighbor
                 </label>
                 <br/>
                 <label>
-                    <input type="radio" name="mode" value="point" class="pointMode" data-mode="point" v-model="mode"/>
-                    Point mode
+                    <input type="checkbox" name="mode" value="edge" class="pointMode" v-model="mode"/>
+                    Edge Neighbor
                 </label>
                 <br/>
                 <label>
-                    <input type="radio" name="mode" value="circle" class="circleMode" data-mode="circle" v-model="mode" />
-                    Circle mode
+                    <input type="checkbox" name="mode" value="vertex" class="circleMode" v-model="mode" />
+                    Vertex Neighbor
+                </label>
+                <br/>
+                <label>
+                    <input type="checkbox" name="mode" value="points" class="circleMode" v-model="mode" />
+                    Vertex Points
                 </label>
                 <hr/>
 
@@ -112,24 +104,18 @@
                     <input type="checkbox" name="clearMap"  class="clearMap" checked v-model="clearMap"/>
                     Clear map on plot
                 </label>
-
                 <br/>
-
                 <label>
-                    <input type="checkbox" name="s2cover"  class="s2cover" checked v-model="s2cover" />
-                    Show s2 covering
+                    <input type="checkbox" name="showPoint"  class="s2cover" checked v-model="showPoint" />
+                    Show Point
                 </label>
 
-                <div class="s2options" v-show="s2optionsShow">
-                    <input size="2" class="min_level" value="1" v-model="min_level"> min_level <br/>
-                    <input size="2" class="max_level" value="30" v-model="max_level"> max_level <br/>
-                    <input size="2" class="max_cells" value="200" v-model="max_cells"> max_cells <br/>
-                    <input size="2" class="level_mod" value="1" v-model="level_mod"> level_mod <br/>
+                <div class="s2options" v-show="true">
+                    <input size="2" class="level" v-model="level"> level <br/>
+                    <input size="2"  v-show="showPointLevel"
+                           class="showLevel" v-model="showLevel"> showLevel <br/>
                 </div>
 
-                <div class="circleOptions" v-show="circleOptionsShow">
-                    <input size="5" class="radiusInput" v-model="radiusInput"> radius (meters)<br/>
-                </div>
                 <br/>
 
                 <textarea class="boundsInput" v-model="boundsInput"></textarea><br/>
@@ -179,31 +165,21 @@
             checkedNames: [],
             picked: '',
             pointmode: 'latlng', //lnglat
-            mode: 'polygon', //circle, point,line
+            mode: ["all"],  //EDGE("edge"), VERTEX("vertex"), ALL("all"), POINTS("points");
             clearMap: true,
-            s2cover: true,
+            showPoint: true,
             radiusInput: 10,
-            min_level: 1,
-            max_level: 30,
-            max_cells: 200,
-            level_mod: 1,
+            level: 15,
+            showLevel: 18,
             map: "",
             layerGroup: "",
             info:"",
             placeholders : [
-                '39.9833094999,116.4758164788',
-                '39.9833094999,116.4758164788,39.9933094999,116.4858164788',
-                'bbox: { \n' +
-                '  ne: { ' +
-                '     lat: 39.9833094999,' +
-                '     lng: 116.4758164788' +
-                '   },' +
-                '   sw: {' +
-                '     lat: 39.9933094999, ' +
-                '     lng: 116.4858164788 ' +
-                '   }, ' +
-                ' }'
+                '39.9108870000,116.4346430000',
+                '39.9835350000,116.4424660000',
+                '39.9869700000,116.4774740000'
             ],
+            center : [39.9108870000,116.4346430000],
             boundsInput: ""
         },
         methods:{
@@ -222,21 +198,11 @@
                     addParam("order", "latlng")
                 }
 
-                addParam("mode", this.mode);
+                addParam("mode", this.mode.join(","));
 
-                if (this.mode == 'circle') {
-                    addParam("radius", this.radiusInput);
-                }
-
-                if (this.showS2Covering()) {
-                    addParam("s2", 'true');
-                    addParam("s2_min_level", this.min_level);
-                    addParam("s2_max_level", this.max_level);
-                    addParam("s2_max_cells", this.max_cells);
-                    addParam("s2_level_mod", this.level_mod);
-                } else {
-                    addParam("s2", 'false');
-                }
+                addParam("s2", 'true');
+                addParam("level", this.level);
+                addParam("showLevel", this.showLevel);
 
                 addParam("points", this.boundsInput);
                 window.location.hash = h;
@@ -313,8 +279,10 @@
                     // try s2 parsing!
                     this.idsCallback();
                     return;
+                } else if(points.length > 0) {
+                    this.renderNeighbors(points);
+                    return;
                 }
-
                 this.resetDisplay();
 
             },
@@ -400,6 +368,23 @@
 
                 });
             },
+            renderNeighbors: function(latlngs) {
+                this.resetDisplay();
+                var data = {
+                    'points': _(latlngs).map(function(ll) { return ll.lat + "," + ll.lng; }).join(','),
+                    'models': this.mode.join(","),
+                    'level': this.level,
+                    'showLevel' : this.showLevel
+                };
+                console.log("data = " + JSON.stringify(data));
+                this.$http.get(baseurl('/s2neighbors'), {params: data, headers: {'Content-Type': 'application/x-www-form-urlencoded'}}).then(function(response){
+                    console.log("body = " + response.body);
+                    this.renderS2Cells(response.body);
+                }, function(response){
+
+                });
+
+            },
             range : function(start, stop, step) {
                 if (arguments.length <= 1) {
                     stop = start || 0;
@@ -420,13 +405,9 @@
             }
         },
         computed: {
-            s2optionsShow: function() {
-                return this.s2cover;
-            },
-            circleOptionsShow: function() {
-                return this.mode == 'circle';
+            showPointLevel: function() {
+                return this.showPoint;
             }
-
         },
         created: function () {
             // `this` 指向 vm 实例
@@ -434,12 +415,13 @@
         },
         mounted: function () {
             this.$nextTick(function () {
+                var mapCenter = this.center;
                 var map = L.map('map', {
                     crs: L.CRS.Baidu,
                     minZoom: 3,
                     maxZoom: 18,
                     attributionControl: false,
-                    center: [39.915119,116.403963],
+                    center: mapCenter,
                     zoom: 15,
                     zoomControl: true
                 });
@@ -452,8 +434,8 @@
                             "百度卫星": L.tileLayer.baidu({layer: 'img'}),
                             "百度地图-大字体": L.tileLayer.baidu({layer: 'vec', bigfont: true}),
                             "百度卫星-大字体": L.tileLayer.baidu({layer: 'img', bigfont: true}),
-                            "自定义样式-黑色地图": L.tileLayer.baidu({layer: 'custom', customid: 'dark'}),
-                            "自定义样式-蓝色地图": L.tileLayer.baidu({layer: 'custom', customid: 'midnight'})
+                            "绿色地图": L.tileLayer.baidu({layer: 'custom', customid: 'grassgreen'}),
+                            "灰色地图": L.tileLayer.baidu({layer: 'custom', customid: 'grayscale'})
                         },
                         {
                             "实时交通信息": L.tileLayer.baidu({layer: 'time'})
@@ -462,8 +444,6 @@
 
                 this.layerGroup = new L.LayerGroup();
                 map.addLayer(this.layerGroup);
-                // test
-                new L.marker([31.839177, 117.232039]).addTo(map);
                 this.map = map;
                 this.boundsInput = this.placeholders[randomFrom(1,10) % this.placeholders.length];
             })
