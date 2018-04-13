@@ -144,6 +144,61 @@
         //map.centerAndZoom(new BMap.Point(116.404, 39.915), 15);
         //var myDistanceToolObject = new BMapLib.DistanceTool(map, {lineStroke : 2});
 //    })
+    var formatArea = function(a) {
+        var unit,sqfeet;
+
+        if (a > 1000000) {
+            a = a / 1000000;
+            unit = 'km²';
+        } else {
+            unit = 'm²';
+        }
+
+        if (a < 100) {
+            return a.toFixed(1) + ' ' + unit;
+        } else {
+            return Math.round(a) + ' ' + unit;
+        }
+    };
+    var RADIUS = 6378137;
+    // ringArea function copied from geojson-area
+    // (https://github.com/mapbox/geojson-area)
+    // This function is distributed under a separate license,
+    // see LICENSE.md.
+    var ringArea = function ringArea(coords) {
+        var rad = function rad(_) {
+            return _ * Math.PI / 180;
+        };
+        var p1, p2, p3, lowerIndex, middleIndex, upperIndex,
+                area = 0,
+                coordsLength = coords.length;
+
+        if (coordsLength > 2) {
+            for (var i = 0; i < coordsLength; i++) {
+                if (i === coordsLength - 2) {// i = N-2
+                    lowerIndex = coordsLength - 2;
+                    middleIndex = coordsLength -1;
+                    upperIndex = 0;
+                } else if (i === coordsLength - 1) {// i = N-1
+                    lowerIndex = coordsLength - 1;
+                    middleIndex = 0;
+                    upperIndex = 1;
+                } else { // i = 0 to N-3
+                    lowerIndex = i;
+                    middleIndex = i+1;
+                    upperIndex = i+2;
+                }
+                p1 = coords[lowerIndex];
+                p2 = coords[middleIndex];
+                p3 = coords[upperIndex];
+                area += ( rad(p3.lng) - rad(p1.lng) ) * Math.sin( rad(p2.lat));
+            }
+
+            area = area * RADIUS * RADIUS / 2;
+        }
+
+        return Math.abs(area);
+    };
     function randomFrom(lowerValue, upperValue) {
         return Math.floor(Math.random() * (upperValue - lowerValue + 1) + lowerValue);
     }
@@ -313,7 +368,7 @@
                     return new L.LatLng(ll.lat, ll.lng);
                 });
 
-                console.log(points);
+                console.log("polygon points >>> " + points);
 
                 var polygon = new L.Polygon(points,
                         {
@@ -322,6 +377,14 @@
                             fill: true,
                             fillOpacity: opacity
                         });
+                var latLngs = polygon.getLatLngs();
+                if(latLngs.length == 1 &&  Array.isArray(latLngs[0])) {
+                    latLngs = latLngs[0];
+                }
+                if(latLngs.length > 2) {
+                    var area = ringArea(latLngs);
+                    description = description + '<br>' +  'area: ' + formatArea(area);
+                }
                 polygon.bindPopup(description);
 
                 this.layerGroup.addLayer(polygon);

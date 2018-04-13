@@ -20,6 +20,7 @@
     <script src="https://cdn.bootcss.com/proj4js/2.4.3/proj4.js"></script>
     <script src="https://cdn.bootcss.com/proj4leaflet/1.0.1/proj4leaflet.min.js"></script>
     <script type="text/javascript" src="thirdparty/underscore.js"></script>
+    <script type="text/javascript" src="thirdparty/leaflet-geodesy.js"></script>
     <script type="text/javascript" src="thirdparty/vue.min.js"></script>
     <script type="text/javascript" src="thirdparty/vue-resource.1.5.0.js"></script>
 
@@ -158,6 +159,61 @@
         //map.centerAndZoom(new BMap.Point(116.404, 39.915), 15);
         //var myDistanceToolObject = new BMapLib.DistanceTool(map, {lineStroke : 2});
 //    })
+    var formatArea = function(a) {
+        var unit,sqfeet;
+
+        if (a > 1000000) {
+            a = a / 1000000;
+            unit = 'km²';
+        } else {
+            unit = 'm²';
+        }
+
+        if (a < 100) {
+            return a.toFixed(1) + ' ' + unit;
+        } else {
+            return Math.round(a) + ' ' + unit;
+        }
+    };
+    var RADIUS = 6378137;
+    // ringArea function copied from geojson-area
+    // (https://github.com/mapbox/geojson-area)
+    // This function is distributed under a separate license,
+    // see LICENSE.md.
+    var ringArea = function ringArea(coords) {
+        var rad = function rad(_) {
+            return _ * Math.PI / 180;
+        };
+        var p1, p2, p3, lowerIndex, middleIndex, upperIndex,
+                area = 0,
+                coordsLength = coords.length;
+
+        if (coordsLength > 2) {
+            for (var i = 0; i < coordsLength; i++) {
+                if (i === coordsLength - 2) {// i = N-2
+                    lowerIndex = coordsLength - 2;
+                    middleIndex = coordsLength -1;
+                    upperIndex = 0;
+                } else if (i === coordsLength - 1) {// i = N-1
+                    lowerIndex = coordsLength - 1;
+                    middleIndex = 0;
+                    upperIndex = 1;
+                } else { // i = 0 to N-3
+                    lowerIndex = i;
+                    middleIndex = i+1;
+                    upperIndex = i+2;
+                }
+                p1 = coords[lowerIndex];
+                p2 = coords[middleIndex];
+                p3 = coords[upperIndex];
+                area += ( rad(p3.lng) - rad(p1.lng) ) * Math.sin( rad(p2.lat));
+            }
+
+            area = area * RADIUS * RADIUS / 2;
+        }
+
+        return Math.abs(area);
+    };
     function randomFrom(lowerValue, upperValue) {
         return Math.floor(Math.random() * (upperValue - lowerValue + 1) + lowerValue);
     }
@@ -181,7 +237,7 @@
             pointmode: 'latlng', //lnglat
             mode: 'polygon', //circle, point,line
             clearMap: true,
-            s2cover: true,
+            s2cover: false,
             radiusInput: 10,
             min_level: 1,
             max_level: 30,
@@ -247,6 +303,9 @@
             isReverseOrder: function() {
                 return this.pointmode == 'lnglat';
             },
+            setReverseOrder: function() {
+                return this.pointmode = 'lnglat';
+            },
             getPoints: function(tokens) {
                 var points = [];
                 if (!tokens) {
@@ -280,11 +339,26 @@
                 });
                 return points;
             },
+            inCircleMode: function() {
+                return this.mode == 'circle';
+            },
+            inPolygonMode: function() {
+                return this.mode == 'polygon';
+            },
+            inPointMode: function() {
+                return this.mode == 'point';
+            },
+            inLineMode: function() {
+                return this.mode == 'line';
+            },
             resetDisplay: function() {
-                if (this.clearMap) {
+                if (this.shouldClear()) {
                     this.layerGroup.clearLayers();
                 }
                 this.info = "";
+            },
+            shouldClear: function() {
+                return this.clearMap;
             },
             boundsCallback: function () {
                 console.log('kill me');
@@ -301,6 +375,30 @@
                 var points = [];
                 if (geojsonFeature) {
                     console.log(geojsonFeature);
+                    if (geojsonFeature['type'] && geojsonFeature['coordinates']) {
+                        geojsonFeature = {
+                            'type': 'Feature',
+                            'properties': {},
+                            'geometry': geojsonFeature
+                        }
+                    }
+
+                    if (geojsonFeature['type'] && geojsonFeature['geometry']) {
+                        console.log('trying to load')
+                        polygon = L.geoJson(geojsonFeature);
+                        console.log(geojsonFeature['geometry']['coordinates'])
+                        console.log(_.flatten(geojsonFeature['geometry']['coordinates']))
+                        coords = _.flatten(geojsonFeature['geometry']['coordinates'])
+                        for (var i = 0; i < coords.length; i+=2) {
+                            points.push(new L.LatLng(coords[i+1], coords[i]));
+                        }
+                        this.setReverseOrder();
+                    }
+
+                    if (polygon) {
+                        this.renderPolygon(polygon, polygon.getBounds())
+                        return;
+                    }
                 } else {
                     var regex = /[+-]?\d+\.\d+/g;
                     var bboxParts = bboxstr.match(regex);
@@ -316,7 +414,163 @@
                 }
 
                 this.resetDisplay();
+                if (points.length == 1 && !this.inCircleMode()  ) {
+                    var regex2 = /@(\d+)$/;
+                    var matches = bboxstr.match(regex2);
+                    if (matches) {
+                        this.min_level = matches[1];
+                        this.s2cover = true;
+                    }
 
+                    var ll = points[0];
+                    // render markers will call setView again, and the map seems to hate having
+                    // it called twice in rapid succession
+                    // this.map.setView(ll, 15);
+                    var marker = new L.Marker(ll);
+                    this.renderMarkers([marker]);
+                    this.renderCovering([ll]);
+                } else if (this.inPolygonMode()) {
+                    if (points.length == 2) {
+                        var ll1 = points[0];
+                        var ll2 = points[1];
+                        var bounds = new L.LatLngBounds(ll1, ll2);
+
+                        var ne = bounds.getNorthEast();
+                        var sw = bounds.getSouthWest();
+                        var nw = new L.LatLng(ne.lat, sw.lng);
+                        var se = new L.LatLng(sw.lat, ne.lng);
+
+                        polygonPoints = [nw, ne, se, sw];
+                    } else {
+                        polygonPoints = points;
+                    }
+                    var polygon = new L.Polygon(polygonPoints,
+                            {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2 });
+                    console.log(">> inPolygonMode ");
+                    this.renderPolygon(polygon, polygon.getBounds())
+                } else if (this.inCircleMode()) {
+                    var bounds = null;
+                    var radius = this.radiusInput;
+                    _.each(points, function(point) {
+                        var polygon = LGeo.circle(point, radius,
+                                {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
+                        this.renderPolygon(polygon, polygon.getBounds(), true);
+                        if (bounds == null) {
+                            bounds = polygon.getBounds();
+                        } else {
+                            bounds = bounds.extend(polygon.getBounds());
+                        }
+                    }, this);
+                    this.map.fitBounds(bounds);
+                } else if (this.inLineMode()) {
+                    var polyline = new L.Polyline(points,
+                            {color: "#0000ff", weight: 4, fill: false, fillOpacity: 0.2 });
+                    this.renderPolygon(polyline, polyline.getBounds());
+
+                    _.each(_.range(0, points.length - 1), _.bind(function(index) {
+                        var a = points[index];
+                        var b = points[(index+1) % points.length];
+                        var distance = this.distanceBetween(a, b);
+//                        this.addInfo(a + ' --> ' + b + '<br/>--- distance: ' + distance + 'm');
+                    }, this))
+                }
+
+                var dotIcon = L.icon({
+                    iconAnchor: [5, 5],
+                    iconUrl: 'img/blue-dot.png'
+                })
+                var markerOpts = {}
+                if (!this.inPointMode()) {
+                    //if (this.inPolygonMode()) {
+                    markerOpts['icon'] = dotIcon;
+                }
+
+                if (points.length > 1) {
+                    var markers = _.map(points, _.bind(function(p, index) {
+                        var marker = new L.Marker(p, markerOpts);
+
+                        var downloadLink = document.createElement("a");
+                        downloadLink.setAttribute("href", "#");
+                        downloadLink.innerHTML = "Download all points as GeoJSON";
+                        downloadLink.onclick = _.bind(function () {
+                            this.downloadDataAll(index, p.lat, p.lng, this.layerGroup.toGeoJSON());
+                        }, this);
+
+//                        var downloadLink = $('<div>Point ' + (index  + 1) + ': ' + p.lat + ',' + p.lng + '<br/><a href="#">Download all points as GeoJSON</a></div>');
+                        marker.bindPopup(downloadLink);
+
+                        return marker;
+                    }, this));
+                    this.renderMarkers(markers);
+                }
+            },
+            degreesToRadians: function(degrees) {
+                return degrees * 0.0174532925;
+            },
+            distanceBetween: function(pointA, pointB) {
+                var latRadA = this.degreesToRadians(pointA.lat);
+                var latRadB = this.degreesToRadians(pointB.lat);
+                var lngRadA = this.degreesToRadians(pointA.lng);
+                var lngRadB = this.degreesToRadians(pointB.lng);
+
+                return Math.acos(Math.sin(latRadA) * Math.sin(latRadB) +
+                                Math.cos(latRadA) * Math.cos(latRadB) * Math.cos(lngRadA - lngRadB)) * this.EARTH_RADIUS_M;
+            },
+            dateFormat: function(date) {
+                return date.getFullYear() + ""
+                        + this.numberFormat(date.getMonth()) + ""
+                        + this.numberFormat(date.getDate()) + "-"
+                        + this.numberFormat(date.getHours()) + ""
+                        + this.numberFormat(date.getMinutes()) + ""
+                        + this.numberFormat(date.getSeconds());
+            },
+            numberFormat: function (num) {
+                return num > 10 ? num : ("0" + num);
+            },
+            downloadData: function(data) {
+//                var downloadLink = $('<a></a>')[0];
+                var downloadLink = document.createElement("a");
+                var json = JSON.stringify(data);
+                var blob = new Blob([json], {type: "octet/stream"});
+                var url = window.URL.createObjectURL(blob);
+                downloadLink.href = url;
+                downloadLink.download = 's2map-' + this.dateFormat(new Date()) + '.geojson';
+                downloadLink.click();
+            },
+            downloadDataAll: function(index, lat, lng, data) {
+//                var downloadLink = $('<a></a>')[0];
+                //                        var downloadLink = $('<div>Point ' +
+                // (index  + 1) + ': ' + p.lat + ',' + p.lng + '<br/>
+                // <a href="#">Download all points as GeoJSON</a></div>');
+                var downloadLink = document.createElement("a");
+                var json = JSON.stringify(data);
+                var blob = new Blob([json], {type: "octet/stream"});
+                var url = window.URL.createObjectURL(blob);
+                downloadLink.href = url;
+                downloadLink.download = 'Point-' + ((index  + 1) + ': ' + lat + ',' + lng) + '.geojson';
+                downloadLink.click();
+            },
+
+            renderPolygon: function(polygon, bounds, dontClear) {
+                if (!dontClear) {
+                    this.resetDisplay();
+                }
+                this.layerGroup.addLayer(polygon);
+
+//                var downloadLink = $('<a href="#">Download as GeoJSON</a>');
+                var downloadLink = document.createElement("a");
+                downloadLink.setAttribute("href", "#");
+                downloadLink.innerHTML = "Download as GeoJSON";
+                downloadLink.onclick = _.bind(function () {
+                    this.downloadData(polygon.toGeoJSON());
+                }, this);
+                polygon.bindPopup(downloadLink);
+
+                this.processBounds(bounds);
+
+                if (typeof(polygon.getLatLngs) != "undefined") {
+                    this.renderCovering(polygon.getLatLngs());
+                }
             },
             cellDescription: function(cell) {
                 return 'cell id (unsigned): ' + cell.id + '<br>' +
@@ -345,7 +599,7 @@
                     return new L.LatLng(ll.lat, ll.lng);
                 });
 
-                console.log(points);
+                console.log("polygon points >>> " + points);
 
                 var polygon = new L.Polygon(points,
                         {
@@ -354,6 +608,14 @@
                             fill: true,
                             fillOpacity: opacity
                         });
+                var latLngs = polygon.getLatLngs();
+                if(latLngs.length == 1 &&  Array.isArray(latLngs[0])) {
+                    latLngs = latLngs[0];
+                }
+                if(latLngs.length > 2) {
+                    var area = ringArea(latLngs);
+                    description = description + '<br>' +  'area: ' + formatArea(area);
+                }
                 polygon.bindPopup(description);
 
                 this.layerGroup.addLayer(polygon);
@@ -366,6 +628,9 @@
                         }, this));
             },
             renderS2Cells: function(cells) {
+                if(cells.length == 0) {
+                    return;
+                }
                 var bounds = null;
                 var polygons = this.renderCells(cells);
                 _.each(polygons, function(p) {
@@ -376,6 +641,61 @@
                 });
                 this.map.setView(bounds.getCenter());
                 this.map.fitBounds(bounds);
+            },
+            renderMarkers: function(points) {
+                var bounds = new L.LatLngBounds(_.map(points, function(p) {
+                    return p.getLatLng();
+                }));
+
+                _.each(points, _.bind(function(p) {
+                    this.layerGroup.addLayer(p);
+                }, this));
+
+                this.processBounds(bounds);
+            },
+            processBounds: function(bounds) {
+                if (!this.shouldClear() && !!this.previousBounds) {
+                    bounds = this.previousBounds.extend(bounds)
+                }
+                this.previousBounds = bounds;
+
+                var zoom = this.map.getBoundsZoom(bounds) - 1;
+
+                // TODO: add control offset logic?
+                var centerPixel = this.map.project(bounds.getCenter(), zoom);
+                var centerPoint = this.map.unproject(centerPixel, zoom)
+                this.map.setView(centerPoint, zoom);
+            },
+            renderCovering: function(latlngs) {
+                if (this.showS2Covering()) {
+                    if(latlngs.length == 1 &&  Array.isArray(latlngs[0])) {
+                        latlngs = latlngs[0];
+                    }
+                    var data = {
+                        'points': _(latlngs).map(function(ll) { return ll.lat + "," + ll.lng; }).join(',')
+                    };
+
+                    if (this.min_level) {
+                        data['min_level'] = this.min_level;
+                    }
+                    if (this.max_level) {
+                        data['max_level'] = this.max_level;
+                    }
+                    if (this.max_cells) {
+                        data['max_cells'] = this.max_cells;
+                    }
+                    if (this.level_mod) {
+                        data['level_mod'] = this.level_mod;
+                    }
+
+                    console.log("data = " + JSON.stringify(data));
+                    this.$http.get(baseurl('/s2cover'), {params: data, headers: {'Content-Type': 'application/x-www-form-urlencoded'}}).then(function(response){
+                        console.log("body = " + response.body);
+                        this.renderS2Cells(response.body);
+                    }, function(response){
+
+                    });
+                }
             },
             idsCallback: function() {
                 this.resetDisplay();
@@ -462,8 +782,7 @@
 
                 this.layerGroup = new L.LayerGroup();
                 map.addLayer(this.layerGroup);
-                // test
-                new L.marker([31.839177, 117.232039]).addTo(map);
+
                 this.map = map;
                 this.boundsInput = this.placeholders[randomFrom(1,10) % this.placeholders.length];
             })

@@ -503,6 +503,7 @@ boundsCallback: function() {
 },
 
 baseMaps: function() {
+  var osmTilesAttr = 'Tiles &copy; <a href="http://tile.osm.org/">OSM</a>, Data &copy; OSM';
   var mapboxTilesAttr = 'Tiles &copy; <a href="http://www.mapbox.com/about/maps/">Mapbox</a>, Data &copy; OSM';
   var mqTilesAttr = 'Tiles &copy; <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png" />';
   var osmAttr = '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
@@ -510,15 +511,25 @@ baseMaps: function() {
  var stamenAttr = 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.'
 
   return [
-     ["OSM Light",
+    ["mapbox Grey",
       new L.TileLayer(
-        'http://d.tiles.mapbox.com/v3/foursquare.map-t2z7w2jz/{z}/{x}/{y}.png',
-        {
-          subdomains: 'abcd'
-        }
+          'http://d.tiles.mapbox.com/v3/foursquare.map-t2z7w2jz/{z}/{x}/{y}.png',
+          {
+            subdomains: 'abcd'
+          }
       ),
       mapboxTilesAttr
     ],
+    ["OSM Light",
+      new L.TileLayer(
+          'http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+          {
+            subdomains: 'abc'
+          }
+      ),
+      osmTilesAttr
+    ],
+
     ["Mapbox Satellite",
       new L.TileLayer(
         'http://{s}.tiles.mapbox.com/v3/foursquare.map-7v8eu5p1/{z}/{x}/{y}.png',

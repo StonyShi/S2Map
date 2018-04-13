@@ -282,10 +282,19 @@ processBounds: function(bounds) {
 
 renderCovering: function(latlngs) {
   if (this.showS2Covering()) {
+    //if(typeof latlngs === 'object') {
+    //  latlngs = latlngs['0'];
+    //}
+    if(latlngs.length == 1 &&  Array.isArray(latlngs[0])) {
+      latlngs = latlngs[0];
+    }
     var data = {
       'points': _(latlngs).map(function(ll) { return ll.lat + "," + ll.lng; }).join(',')
     };
-
+    //if(typeof latlngs === 'object') {
+    //  console.log("latlngs = " + latlngs['0']);
+    //  console.log("latlngs = " + _(latlngs['0']).map(function(ll) { return ll.lat + "," + ll.lng; }).join(','));
+    //}
     if (this.$minLevel.val()) {
       data['min_level'] = this.$minLevel.val();
     }
@@ -315,7 +324,7 @@ downloadData: function(data) {
   var blob = new Blob([json], {type: "octet/stream"});
   var url = window.URL.createObjectURL(blob);
   downloadLink.href = url;
-  downloadLink.download = 's2map-' + new Date() + '.geojson';
+  downloadLink.download = 's2map-' + this.dateFormat(new Date()) + '.geojson';
   downloadLink.click();
 },
 
@@ -323,7 +332,6 @@ renderPolygon: function(polygon, bounds, dontClear) {
   if (!dontClear) {
     this.resetDisplay();
   }
-
   this.layerGroup.addLayer(polygon);
 
   var downloadLink = $('<a href="#">Download as GeoJSON</a>');
@@ -336,6 +344,17 @@ renderPolygon: function(polygon, bounds, dontClear) {
   if (typeof(polygon.getLatLngs) != "undefined") {
     this.renderCovering(polygon.getLatLngs());
   }
+},
+dateFormat: function(date) {
+  return date.getFullYear() + ""
+      + this.numberFormat(date.getMonth()) + ""
+      + this.numberFormat(date.getDate()) + "-"
+      + this.numberFormat(date.getHours()) + ""
+      + this.numberFormat(date.getMinutes()) + ""
+      + this.numberFormat(date.getSeconds());
+},
+numberFormat: function (num) {
+  return num > 10 ? num : ("0" + num);
 },
 
 boundsCallback: function() {
@@ -351,15 +370,15 @@ boundsCallback: function() {
    geojsonFeature = null;
   }
 
-  try {
-    var wkt = new Wkt.Wkt();
-    console.log(bboxstr);
-    wktFeature = wkt.read(bboxstr);
-  } catch(e) {
-   console.log(e)
-   console.log('could not parse as wkt')
-   wktFeature = null;
-  }
+  //try {
+  //  var wkt = new Wkt.Wkt();
+  //  console.log(bboxstr);
+  //  wktFeature = wkt.read(bboxstr);
+  //} catch(e) {
+  // console.log(e)
+  // console.log('could not parse as wkt')
+  // wktFeature = null;
+  //}
 
 
   var points = [];
@@ -377,7 +396,7 @@ boundsCallback: function() {
         'geometry': geojsonFeature
       }
     }
-    console.log(geojsonFeature)
+    //console.log(geojsonFeature)
 
     if (geojsonFeature['type'] && geojsonFeature['geometry']) {
       console.log('trying to load')
@@ -428,8 +447,8 @@ boundsCallback: function() {
     this.renderCovering([ll]);
   } else if (this.inPolygonMode()) {
     if (points.length == 2) {
-       var ll1 = points[0]
-       var ll2 = points[1]
+       var ll1 = points[0];
+       var ll2 = points[1];
        var bounds = new L.LatLngBounds(ll1, ll2);
 
       var ne = bounds.getNorthEast();
@@ -442,14 +461,15 @@ boundsCallback: function() {
       polygonPoints = points;
     }
     var polygon = new L.Polygon(polygonPoints,
-       {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
+       {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2 , showMeasurements: true});
+    console.log(">> inPolygonMode ");
     this.renderPolygon(polygon, polygon.getBounds())
   } else if (this.inCircleMode()) {
     var bounds = null;
     var radius = this.$radiusInput.val();
     _.each(points, function(point) {
       var polygon = LGeo.circle(point, radius,
-         {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
+         {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2 , showMeasurements: true});
       this.renderPolygon(polygon, polygon.getBounds(), true);
       if (bounds == null) {
         bounds = polygon.getBounds();
@@ -460,7 +480,7 @@ boundsCallback: function() {
     map.fitBounds(bounds);
   } else if (this.inLineMode()) {
     var polyline = new L.Polyline(points,
-     {color: "#0000ff", weight: 4, fill: false, fillOpacity: 0.2});
+     {color: "#0000ff", weight: 4, fill: false, fillOpacity: 0.2 , showMeasurements: true});
     this.renderPolygon(polyline, polyline.getBounds());
 
     _.each(_.range(0, points.length - 1), _.bind(function(index) {
@@ -473,7 +493,7 @@ boundsCallback: function() {
 
   var dotIcon = L.icon({
     iconAnchor: [5, 5],
-    iconUrl: 'img/blue-dot.png',
+    iconUrl: 'img/blue-dot.png'
   })
   var markerOpts = {}
   if (!this.inPointMode()) {
@@ -578,9 +598,13 @@ initialize: function() {
   }
 
   this.map = new L.Map('map', opts);
-  var zoom = new L.Control.Zoom()
+  var zoom = new L.Control.Zoom();
   zoom.setPosition('topright');
   this.map.addControl(zoom);
+
+  //ruler
+  L.control.ruler({position: 'topright'}).addTo(this.map);
+  //new L.Control.Ruler().addTo(this.map);
 
   this.attribution = new L.Control.Attribution();
   this.attribution.addAttribution(this.baseMap[2]);
@@ -614,6 +638,9 @@ initialize: function() {
         .openOn(this.map);
     }
   }, this));
+
+  //var RulerControl = new L.Control.Ruler({position: 'topleft'});
+  //RulerControl.addTo(map);
 
   this.$el = $(document);
   this.$infoArea = this.$el.find('.info');

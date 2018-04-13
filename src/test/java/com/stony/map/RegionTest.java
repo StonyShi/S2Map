@@ -70,6 +70,7 @@ public class RegionTest extends BaseTest{
             for (int i = 0; i < s2points_vector.size(); i++) {
                 int d = (i + 1) % s2points_vector.size();
                 builder.addEdge(s2points_vector.get(i), s2points_vector.get(d));
+                System.out.printf("i = %s, d = %s\n", i, d);
 //                builder.addEdge(
 //                        s2points_vector[i],
 //                        s2points_vector[(i + 1) % s2points_vector.size()]);

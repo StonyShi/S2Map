@@ -233,7 +233,7 @@ public class RegionCovererTest extends BaseTest{
         }
     }
 
-    List<S2CellId> SearchCells(double lat, double lng, double radius_meters,
+    public List<S2CellId> SearchCells(double lat, double lng, double radius_meters,
                                int min_level, int max_level, int max_cells) {
         final double radius_radians = earthMetersToRadians(radius_meters);
         final S2Cap region =
@@ -249,6 +249,61 @@ public class RegionCovererTest extends BaseTest{
         coverer.getCovering(region, covering);
 
         return covering;
+    }
+    public List<S2CellId> SearchCells2(double lat, double lng, double radius_meters,
+                                         int min_level, int max_level, int max_cells) {
+
+        S2Cap region = S2Cap.fromAxisHeight(S2LatLng.fromDegrees(lat, lng).normalized().toPoint(),
+                radius2height(radius_meters/1000));
+        S2RegionCoverer coverer = new S2RegionCoverer();
+        coverer.setMinLevel(min_level);
+        coverer.setMaxLevel(max_level);
+        coverer.setMaxCells(max_cells);
+
+        ArrayList<S2CellId> covering = new ArrayList<>(64);
+        coverer.getCovering(region, covering);
+
+        return covering;
+    }
+    public List<S2CellId> SearchCells3(double lat, double lng, double radius_meters,
+                                       int min_level, int max_level, int max_cells) {
+
+
+        S2Cap region = S2Cap.fromAxisAngle(S2LatLng.fromDegrees(lat, lng).normalized().toPoint(),
+                S1Angle.radians(S2Earth.MetersToRadians(radius_meters)));
+
+        S2RegionCoverer coverer = new S2RegionCoverer();
+        coverer.setMinLevel(min_level);
+        coverer.setMaxLevel(max_level);
+        coverer.setMaxCells(max_cells);
+
+        ArrayList<S2CellId> covering = new ArrayList<>(64);
+        coverer.getCovering(region, covering);
+
+        return covering;
+    }
+    @Test
+    public void test_search(){
+        double lat = 39.9034051944, lng = 116.4210182366;
+        for(S2CellId cellId : SearchCells(lat, lng, 1000,1, 30, 200)) {
+            System.out.printf("id=%s, min=%s, max=%s\n", cellId.id(), cellId.rangeMin().id(), cellId.rangeMax().id());
+        }
+        System.out.println("----------------");
+        for(S2CellId cellId : SearchCells2(lat, lng, 1000,1, 30, 200)) {
+            System.out.printf("id=%s, min=%s, max=%s\n", cellId.id(), cellId.rangeMin().id(), cellId.rangeMax().id());
+        }
+        System.out.println("\n\n");
+        String result = SearchCells(lat, lng, 1000,1, 30, 200).stream().map(S2CellId::id).map(String::valueOf).collect(Collectors.joining(","));
+        System.out.println(result);
+
+
+        System.out.println("\n\n");
+        result = SearchCells2(lat, lng, 1000,1, 30, 200).stream().map(S2CellId::id).map(String::valueOf).collect(Collectors.joining(","));
+        System.out.println(result);
+
+        System.out.println("\n\n");
+        result = SearchCells3(lat, lng, 1000,1, 30, 200).stream().map(S2CellId::id).map(String::valueOf).collect(Collectors.joining(","));
+        System.out.println(result);
     }
     @Test
     public void test_baidu_world(){
