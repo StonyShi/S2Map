@@ -58,11 +58,18 @@
             <artifactId>javax.annotation-api</artifactId>
             <version>1.2</version>
         </dependency>
+        <!--<dependency>-->
+            <!--<groupId>com.google.geo.s2</groupId>-->
+            <!--<artifactId>s2-geometry-library</artifactId>-->
+            <!--<version>1.4</version>-->
+        <!--</dependency>-->
+        <!-- https://mvnrepository.com/artifact/io.sgr/s2-geometry-library-java -->
         <dependency>
-            <groupId>com.google.geo.s2</groupId>
-            <artifactId>s2-geometry-library</artifactId>
-            <version>1.4</version>
+            <groupId>io.sgr</groupId>
+            <artifactId>s2-geometry-library-java</artifactId>
+            <version>1.0.0</version>
         </dependency>
+
         <!-- https://mvnrepository.com/artifact/de.grundid.opendatalab/geojson-jackson -->
         <dependency>
             <groupId>de.grundid.opendatalab</groupId>
