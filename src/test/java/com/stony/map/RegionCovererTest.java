@@ -104,11 +104,11 @@ public class RegionCovererTest extends BaseTest{
 
 
         System.out.println("====== get mine distance =======");
-//        int minIndex = polyline.getSpaceDistance(targetPoint);
-//        System.out.println(minIndex);
-//
-//        double earthDistance1 = new S2LatLng(polyline.vertex(minIndex)).getEarthDistance(s2LatLng);
-//        System.out.println(earthDistance1);
+        int minIndex = polyline.getSpaceDistance(targetPoint);
+        System.out.println(minIndex);
+
+        double earthDistance1 = new S2LatLng(polyline.vertex(minIndex)).getEarthDistance(s2LatLng);
+        System.out.println(earthDistance1);
 
     }
 
@@ -268,17 +268,17 @@ public class RegionCovererTest extends BaseTest{
     public List<S2CellId> SearchCells3(double lat, double lng, double radius_meters,
                                        int min_level, int max_level, int max_cells) {
 
-//
-//        S2Cap region = S2Cap.fromAxisAngle(S2LatLng.fromDegrees(lat, lng).normalized().toPoint(),
-//                S1Angle.radians(S2Earth.MetersToRadians(radius_meters)));
-//
-//        S2RegionCoverer coverer = new S2RegionCoverer();
-//        coverer.setMinLevel(min_level);
-//        coverer.setMaxLevel(max_level);
-//        coverer.setMaxCells(max_cells);
+
+        S2Cap region = S2Cap.fromAxisAngle(S2LatLng.fromDegrees(lat, lng).normalized().toPoint(),
+                S1Angle.radians(S2Earth.MetersToRadians(radius_meters)));
+
+        S2RegionCoverer coverer = new S2RegionCoverer();
+        coverer.setMinLevel(min_level);
+        coverer.setMaxLevel(max_level);
+        coverer.setMaxCells(max_cells);
 
         ArrayList<S2CellId> covering = new ArrayList<>(64);
-//        coverer.getCovering(region, covering);
+        coverer.getCovering(region, covering);
 
         return covering;
     }

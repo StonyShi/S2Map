@@ -196,24 +196,24 @@ public class RegionTest extends BaseTest{
         System.out.println(S2Projections.MAX_WIDTH.getClosestLevel(earthMetersToRadians(800)));
 
 
-//        System.out.println("MAX_WIDTH2 800 米--------");
-//        System.out.println(S2Projections.MAX_WIDTH.getMinLevel(S2Earth.MetersToRadians(800)));
-//        System.out.println(S2Projections.MAX_WIDTH.getMaxLevel(S2Earth.MetersToRadians(800)));
-//        System.out.println(S2Projections.MAX_WIDTH.getClosestLevel(S2Earth.MetersToRadians(800)));
-//
-//
-//
-//
-//        System.out.println("MAX_WIDTH 1500 米--------");
-//        System.out.println(S2Projections.MAX_WIDTH.getMinLevel(earthMetersToRadians(1500)));
-//        System.out.println(S2Projections.MAX_WIDTH.getMaxLevel(earthMetersToRadians(1500)));
-//        System.out.println(S2Projections.MAX_WIDTH.getClosestLevel(earthMetersToRadians(1500)));
-//
-//
-//        System.out.println("MAX_WIDTH2 1500 米--------");
-//        System.out.println(S2Projections.MAX_WIDTH.getMinLevel(S2Earth.MetersToRadians(1500)));
-//        System.out.println(S2Projections.MAX_WIDTH.getMaxLevel(S2Earth.MetersToRadians(1500)));
-//        System.out.println(S2Projections.MAX_WIDTH.getClosestLevel(S2Earth.MetersToRadians(1500)));
+        System.out.println("MAX_WIDTH2 800 米--------");
+        System.out.println(S2Projections.MAX_WIDTH.getMinLevel(S2Earth.MetersToRadians(800)));
+        System.out.println(S2Projections.MAX_WIDTH.getMaxLevel(S2Earth.MetersToRadians(800)));
+        System.out.println(S2Projections.MAX_WIDTH.getClosestLevel(S2Earth.MetersToRadians(800)));
+
+
+
+
+        System.out.println("MAX_WIDTH 1500 米--------");
+        System.out.println(S2Projections.MAX_WIDTH.getMinLevel(earthMetersToRadians(1500)));
+        System.out.println(S2Projections.MAX_WIDTH.getMaxLevel(earthMetersToRadians(1500)));
+        System.out.println(S2Projections.MAX_WIDTH.getClosestLevel(earthMetersToRadians(1500)));
+
+
+        System.out.println("MAX_WIDTH2 1500 米--------");
+        System.out.println(S2Projections.MAX_WIDTH.getMinLevel(S2Earth.MetersToRadians(1500)));
+        System.out.println(S2Projections.MAX_WIDTH.getMaxLevel(S2Earth.MetersToRadians(1500)));
+        System.out.println(S2Projections.MAX_WIDTH.getClosestLevel(S2Earth.MetersToRadians(1500)));
     }
 
 }
