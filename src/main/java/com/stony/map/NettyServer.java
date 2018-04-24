@@ -20,13 +20,23 @@ import java.nio.file.Paths;
 public class NettyServer {
 
     public static void main(String[] args) throws URISyntaxException {
+        int _port = 9037;
+        if(args.length > 0) {
+            String temp = args[0];
+            try {
+                _port = Integer.parseInt(temp);
+            } catch (NumberFormatException e) {
+                _port = 9037;
+                System.out.println("format port error : " + temp);
+            }
+        }
         final Path resource = Paths.get(NettyServer.class.getResource("/WEBAPP").toURI());
 
         System.out.println("resource = " + resource.toString());
 
-
+        final int port = _port;
         HttpServer.create(opt -> {
-            opt.host("0.0.0.0").port(9037);
+            opt.host("0.0.0.0").port(port);
         }).startAndAwait(JerseyBasedHandler.builder()
             .withClassPath("com.stony.map.controllers")
             .addValueProvider(JacksonProvider.class)

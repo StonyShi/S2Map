@@ -31,11 +31,12 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>${project.build.directory}/classes/WEBAPP</directory>
+            <!--<directory>${project.build.directory}/classes/WEBAPP</directory>-->
+            <directory>${basedir}/src/main/resources/WEBAPP</directory>
             <outputDirectory>WEBAPP</outputDirectory>
             <fileMode>0644</fileMode>
             <includes>
-                <include>*</include>
+                <include>**</include>
             </includes>
         </fileSet>
 

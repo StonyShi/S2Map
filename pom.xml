@@ -104,11 +104,16 @@
         </dependency>
 
         <!-- reactor netty ext -->
+        <!--<dependency>-->
+            <!--<groupId>com.stony.reactor</groupId>-->
+            <!--<artifactId>reactor-netty-ext</artifactId>-->
+            <!--<version>1.4.1</version>-->
+        <!--</dependency>-->
+        <!-- https://mvnrepository.com/artifact/com.github.stonyshi/reactor-netty-ext -->
         <dependency>
-
-            <groupId>com.stony.reactor</groupId>
+            <groupId>com.github.stonyshi</groupId>
             <artifactId>reactor-netty-ext</artifactId>
-            <version>1.4.1</version>
+            <version>1.0.1</version>
         </dependency>
 
 
