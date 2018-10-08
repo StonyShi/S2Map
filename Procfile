@@ -1,1 +1,1 @@
-web: sh target/S2Map-1.1-dist/S2Map-1.1/bin/app.sh 80
+web: java $JAVA_OPTS -cp target/classes:target/dependency/* MainServer 80
