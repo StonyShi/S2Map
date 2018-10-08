@@ -2,7 +2,8 @@
 <assembly >
     <id>dist</id>
     <formats>
-        <format>dir</format>
+        <!--<format>dir</format>-->
+        <format>tar.gz</format>
     </formats>
     <includeBaseDirectory>true</includeBaseDirectory>
     <fileSets>
@@ -30,14 +31,15 @@
                 <include>*</include>
             </includes>
         </fileSet>
+
         <fileSet>
-            <!--<directory>${project.build.directory}/classes/WEBAPP</directory>-->
-            <directory>${basedir}/src/main/resources/WEBAPP</directory>
+            <directory>${project.build.directory}/classes/WEBAPP</directory>
             <outputDirectory>WEBAPP</outputDirectory>
             <fileMode>0644</fileMode>
-            <includes>
-                <include>**</include>
-            </includes>
+            <directoryMode>0644</directoryMode>
+            <!--<includes>-->
+                <!--<include>**</include>-->
+            <!--</includes>-->
         </fileSet>
 
     </fileSets>

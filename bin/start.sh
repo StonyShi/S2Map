@@ -69,13 +69,18 @@ JAVA_OPTS=" -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true "
 ## LOG_OPTS=" -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogs.dir=$LOGS_DIR -Dlog.config.file=$LOG_CONFIG_FILE "
 HOME_OPTS=" -Dcatalina.home=$DEPLOY_DIR $SERVER_NAME -Dapp.config.file=$APP_CONFIG_FILE "
 
-JAVA_MEM_OPTS=" "
-BITS=`java -version 2>&1 | grep -i 64-bit`
-if [ -n "$BITS" ]; then
-    JAVA_MEM_OPTS=" -server -Xmx1g -Xms1g -XX:+UseG1GC "
-else
-    JAVA_MEM_OPTS=" -server -Xms256m -Xmx256m -XX:PermSize=128m -XX:SurvivorRatio=2 -XX:+UseParallelGC "
+
+## export JAVA_MEM_OPTS=" -Xms128m -Xmx256m "
+if [ "$JAVA_MEM_OPTS" = "" ]; then
+    JAVA_MEM_OPTS=" "
+    BITS=`java -version 2>&1 | grep -i 64-bit`
+    if [ -n "$BITS" ]; then
+        JAVA_MEM_OPTS=" -server -Xmx1g -Xms1g -XX:+UseG1GC "
+    else
+        JAVA_MEM_OPTS=" -server -Xms256m -Xmx256m -XX:PermSize=128m -XX:SurvivorRatio=2 -XX:+UseParallelGC "
+    fi
 fi
+
 
 echo -e "Starting the $DEPLOY_DIR ...\c"
 

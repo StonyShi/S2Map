@@ -20,6 +20,7 @@ import java.util.Map;
  * @version 下午3:11
  * @since 2018/10/8
  */
+@Path("/me")
 public class TokenController {
     private static final Logger logger = LoggerFactory.getLogger(TokenController.class);
 
